@@ -196,65 +196,116 @@ $$
 
 Fig. 5
 
+
 ## Gradient Descent
 
 另外，也可以通過 Gradient Descent 的方式來理解 Lasso & Ridge
 這裡將 Linear Regression 透過 weight 和 bias 的方式表示，但大致和上面的表示方法大同小異
 
 $$
-Linear\ Regression:\hat{y}=w_1x_1+w_2x_2+...+w_Nx_N+b\\---------------\\
+Linear\ Regression\ : \hat{y} = w_1x_1+w_2x_2+...+w_Nx_N+b
+$$
+
+$$
 w:weight,\ b:bias
 $$
 
+***Loss Function of each Regularization:***
+
+
+$No\ Regularization$
+
 $$
-Loss\ Function\ of \ each\ Regularization:\\No\ Regularization\\
-L=(\hat{y}-y)^2\\\ \ \ \ \ \ \ \ \ \ \ \ \ =(wx+b-y)^2\\\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =Error\ between\ \hat{y}\ (pred.\ value)\ and\ y\ (true\ value)
+L=(\hat{y}-y)^2\ \ \ \ \ \ \ \ \ \ \ \ \ 
 $$
 
 $$
-L1 \ regularization\\
+\ =(wx+b-y)^2
+$$
+
+$$
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =Error\ between\ \hat{y}\ (pred.\ value)\ and\ y\ (true\ value)
+$$
+
+$L1\ regularization$
+
+$$
 L_1=(wx+b-y)^2+\lambda|w|
 $$
 
+$L2\ regularization$
+
 $$
-L2 \ regularization\\
 L_2=(wx+b-y)^2+\lambda w^2
 $$
 
 引入 Gradient Descent 並分別以三種情境帶入以觀察 $w$ 的變化
 
 $$
-w_{new}=w-\gamma \frac{\partial L}{\partial w}\\---------------\\
-\gamma:Learning\ rate\\---------------\\Assume:\\
-Learning\ rate\ (\gamma)=1\\
+w_{new}=w-\gamma \frac{\partial L}{\partial w}
+$$
+
+$$
+\gamma:Learning\ rate
+$$
+
+$Assume$
+
+$$
+Learning\ rate\ (\gamma)=1
+$$
+
+$$
 H=2x(wx+b-y)
+$$
 
+
+$No\ Regularization$
+
+$$
+w_{new}=w-\gamma\ [\ 2x(wx+b-y)\ ]
 $$
 
 $$
-No\ Regularization:\\
-w_{new}=w-\gamma\ [\ 2x(wx+b-y)\ ]\\=w-H\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
-
+=w-H\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
 $$
 
+$L1\ Regularization$
+
 $$
-L1\ Regularization:\\
 w_{new}=w-\gamma\ [\ 2x(wx+b-y)+\lambda \frac{d|w|}{w}\ ]
-\\\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =w-\gamma\ [\ 2x(wx+b-y)+\lambda\ ] \ \ \ (w>0)
-\\\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =w-\gamma\ [\ 2x(wx+b-y)-\lambda\ ] \ \ \ (w<0)\\=(w-H)-\lambda \ \ \ (w>0)\ \ \ \ \ \ \ \ \ \ \\=(w-H)+\lambda \ \ \ (w<0)\ \ \ \ \ \ \ \ \ \ 
-
 $$
 
 $$
-L2\ Regularization:\\
-w_{new}=w-\gamma\ [\ 2x(wx+b-y)+2\lambda w\ ]\\=(w-H)-2\lambda w \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =w-\gamma\ [\ 2x(wx+b-y)+\lambda\ ] \ \ \ (w>0)
+$$
 
+$$
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =w-\gamma\ [\ 2x(wx+b-y)-\lambda\ ] \ \ \ (w<0)
+$$
+
+$$
+=(w-H)-\lambda \ \ \ (w>0)\ \ \ \ \ \ \ \ \ \ 
+$$
+
+$$
+=(w-H)+\lambda \ \ \ (w<0)\ \ \ \ \ \ \ \ \ \ 
+$$
+
+$L2\ Regularization$
+
+$$
+w_{new}=w-\gamma\ [\ 2x(wx+b-y)+2\lambda w\ ]
+$$
+
+$$
+=(w-H)-2\lambda w \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
 $$
 
 在這裡可以先假設 Linear Regression 完美 fit train data，但這也表示這個 model 對於陌生 data (validation, test data) 等的表現會較差，即上面所提到的 High variance
-(Overfitting)，所以在對 Linear Regression 引入 Regularization，可以對原始的 model 要 overfit 的時候做到懲罰，因為 $\lambda$ 是一個獨立於 model & data 的常數。從 L1 Regularization 的 $w_{new}$ 式中看到，當 $w>0$ 時，$-\lambda$ 會使 $w$ 不要那麼大，$w<0$ 時同理。而在 L2 Regularization 中也做了差不多的事。
+(Overfitting)，所以在對 Linear Regression 引入 Regularization，可以對原始的 model 要 overfit 的時候做到懲罰，因為 $\lambda$ 是一個獨立於 model & data 的常數。從 L1 Regularization 的 $w_{new}$ 式中看到，當 $w>0$ 時， $-\lambda$ 會使 $w$ 不要那麼大， $w<0$ 時同理。而在 L2 Regularization 中也做了差不多的事。
 
-所以綜合 Bayesian 和 Gradient descent 的結果，當 $\lambda$ 越大時，在 Bayesian 的結果中，$\beta_j$ distribution (both Lasso & Ridge) 會更集中在 0 左右，而在 Gradient descent的結果中，$|w_{new}|$ 會越小，簡單來說即為懲罰力道越強，可以使 $w$ 降低越多，進而達到避免 Overfitting 的結果，但也要注意 $\lambda$ 並非越小越好，而是在決定 $\lambda$ 的過程中會有 Variance-Bias Trade-off 的行為，所以需要透過 Cross Validation 來決定適合每個 model 的最佳 $\lambda$ 值。
+所以綜合 Bayesian 和 Gradient descent 的結果，當 $\lambda$ 越大時，在 Bayesian 的結果中， $\beta_j$ distribution (both Lasso & Ridge) 會更集中在 0 左右，而在 Gradient descent的結果中， $|w_{new}|$ 會越小，簡單來說即為懲罰力道越強，可以使 $w$ 降低越多，進而達到避免 Overfitting 的結果，但也要注意 $\lambda$ 並非越小越好，而是在決定 $\lambda$ 的過程中會有 Variance-Bias Trade-off 的行為，所以需要透過 Cross Validation 來決定適合每個 model 的最佳 $\lambda$ 值。
 
 # Lasso Feature Selection
 
