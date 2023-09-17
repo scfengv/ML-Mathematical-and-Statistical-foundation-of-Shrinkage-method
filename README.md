@@ -1,5 +1,13 @@
 # Mathematical and Statistical foundation of Shrinkage method
 
+## Content
+- Abstract
+- Introduction
+- Shrinkage method in Mathematic and Statistic
+- Lasso Feature Selection
+- Logistic Regression
+- Reference
+
 # Abstract
 
 本文將探討 Shrinkage method 背後的數學和統計學基礎，並透過 Bayesian 和 Gradient descent 兩種觀點去了解 Lasso 和 Ridge 兩者根本上的差異。最後使用著名的人工資料 wave dataset 嘗試將原始資料的 121 個變數透過 Lasso regression 和 Stepwise selection 簡化到分別剩 14 和 9 個變數，並用 Logistic regression 進行分類比較，分類準確度分別高達 92.36% 和 91.96%。
