@@ -224,7 +224,7 @@ $$
 $$
 
 $$
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =Error\ between\ \hat{y}\ (pred.\ value)\ and\ y\ (true\ value)
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =Error\ between\ \hat{y}\ (pred.\ value)\ and\ y\ (true\ value)
 $$
 
 $L1\ regularization$
