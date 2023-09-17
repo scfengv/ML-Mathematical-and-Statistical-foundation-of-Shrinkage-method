@@ -309,21 +309,18 @@ $$
 
 # Lasso Feature Selection
 
-本文所使用的是 `sklearn.linear_model` 模組裡面的 `lasso` (glmnet.lasso 和 sklearn.lasso 大致相同，兩者的差別可以參考這兩篇文章: [https://notebook.community/ceholden/glmnet-python/examples/glmnet_demo](https://notebook.community/ceholden/glmnet-python/examples/glmnet_demo), [https://stats.stackexchange.com/questions/160096/what-are-the-differences-between-ridge-regression-using-rs-glmnet-and-pythons](https://stats.stackexchange.com/questions/160096/what-are-the-differences-between-ridge-regression-using-rs-glmnet-and-pythons))，要注意的是在 `sklearn` 中 $\lambda$ 被稱為 `alpha` ，但不會影響太多，以下以 $\lambda$ 表示。
+本文所使用的是 `sklearn.linear_model` 模組裡面的 `lasso` (glmnet.lasso 和 sklearn.lasso 大致相同，兩者的差別可以參考這兩篇文章: [Generalized Linear Models and Elastic Nets (GLMNET)](https://notebook.community/ceholden/glmnet-python/examples/glmnet_demo), [What are the differences between Ridge regression using R's glmnet and Python's scikit-learn?](https://stats.stackexchange.com/questions/160096/what-are-the-differences-between-ridge-regression-using-rs-glmnet-and-pythons))，要注意的是在 `sklearn` 中 $\lambda$ 被稱為 `alpha` ，但不會影響太多，以下以 $\lambda$ 表示。
 
 在理解了理論面後就可以實際應用 Lasso Regression 來做到 Feature Selection。觀察下面這張 Lasso Penalty vs. Coefficients 的圖 (Fig. 6-1)，可以看到隨著 $\lambda$ 值的提升，確實對 Coefficients 起到收斂的效果，而在 $\lambda > 10^{-0.5}$ 後所有係數都收縮到 0，也就是指模型中已經不含有任何變數，即為 Fig. 2 中左圖的狀況，模型已經變成一個常數值。可以從 Cross Validation 的結果中看到，表現最好的 $\lambda=10^{-3}$，選擇的變數為 21 個 v 類變數中的 13 個，在變數選擇上我有做了一些更動，由下圖可以發現，在 $\lambda = 10^{-3}$ 時，很多變數都還沒收斂到 0，故此時若挑選變數的門檻令為 Lasso Feature Selection 定義的 coef. > 0 的話，會將太多變數放入，故在 $\lambda = 10^{-3}$ 時，將門檻設為 coef. > 0.01。但在已經收斂的 $\lambda = 10^{-2}$ (但非 Cross Validation 選出的最高分參數)，即可將挑選變數門檻令為 coef. > 0，得出的結果差不多，但在 $\lambda = 10^{-2}$ 時被挑選的變數會多一個 `‘v20’`。
 
-![Fig. 6-1](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%202.png)
+<img width="600" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/33085962-37ff-4182-aab9-29c5f034fc87">
 
 Fig. 6-1
 
-![Fig. 6-2](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%203.png)
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/8118174f-2587-4b71-8fda-e401e352fb85">
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/e4145a03-6ef0-4722-b95b-721860cea9d8">
 
-Fig. 6-2
-
-![Fig. 6-3](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%204.png)
-
-Fig. 6-3
+Fig. 6-2 & Fig. 6-3
 
 ```python
 params = {
@@ -355,7 +352,7 @@ Selected Feature: ['v4' 'v5' 'v8' 'v9' 'v10' 'v11' 'v12' 'v13' 'v15' 'v16' 'v17'
 Selected Feature: ['v9', 'v10', 'v11', 'v12', 'v13', 'v15', 'v16', 'v17', 'v18']
 ```
 
-![Fig. 7](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%205.png)
+<img width="600" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/bcf72a76-d09f-49e1-bc57-7978f3e6f418">
 
 Fig. 7
 
@@ -368,21 +365,19 @@ sfs.get_metric_dict()[9]
 feature_names: ['v9','v10','v11','v12','v13','v15','v16','v17','v18']
 
 sfs.get_metric_dict()[10]
-feature_names: ['v9','v10','v11','v12','v13','v15','v16','v17','v18',
-								'alea81']
+feature_names: ['v9','v10','v11','v12','v13','v15','v16','v17','v18','alea81']
 
 sfs.get_metric_dict()[11]
-feature_names: ['v4','v9','v10','v11','v12','v13','v15','v16','v17','v18',
-								'alea81']
+feature_names: ['v4','v9','v10','v11','v12','v13','v15','v16','v17','v18','alea81']
 
 sfs.get_metric_dict()[21]
 feature_names: ['v4','v8','v9','v10','v11','v12','v13','v15','v16','v17','v18',
-								'alea81','alea7','alea20','alea24','alea26','alea29','alea32','alea48','alea71','alea81','alea85']
+		'alea81','alea7','alea20','alea24','alea26','alea29','alea32','alea48','alea71','alea81','alea85']
 
 sfs.get_metric_dict()[30]
 feature_names: ['v4','v8','v9','v10','v11','v12','v13','v15','v16','v17','v18',
-								'alea2','alea7','alea9','alea18','alea24','alea26','alea29','alea32','alea35','alea42','alea48','alea51','alea58','alea71',
-								'alea81','alea85''alea95','alea98','alea100']
+		'alea2','alea7','alea9','alea18','alea24','alea26','alea29','alea32','alea35','alea42','alea48','alea51','alea58','alea71',
+		'alea81','alea85''alea95','alea98','alea100']
 ```
 
 而在 Lasso 有沒有發生類似的狀況呢？答案是有的，還記得我剛剛提到的  $\lambda$ 在 $10^{-3}$ 和 $10^{-2}$ 那邊的問題，之所以後來選擇 $\lambda=10^{-2}$ 的原因是因為在  $\lambda=10^{-3}$ 時大部分的 a 類變數係數都還沒有收斂，但如果看得更仔細一點會發現，在 $\lambda=10^{-3}$ 時，`’v1’, ‘v7’` 兩個 v 類變數已經收斂到 0 了，若將 coef. 門檻上調到 0.05 ( 沒有大太的實質意義 )，可以看到 a 類變數只剩 `‘alea70’` ，說明其實在  $\lambda=10^{-3}$ 時大部分的 a 類變數已經準備要收斂了，但可以發現 v 類變數中的 `‘v2’` 也消失了，而在 $\lambda=10^{-2}$ 時，`’v3’, ‘v4’, ‘v6’, ‘v14’, ‘v21’` 也都消失了。
@@ -399,13 +394,13 @@ feature_names: ['v4','v8','v9','v10','v11','v12','v13','v15','v16','v17','v18',
 print(importance > 0)
 
 feature_names: ['v2' 'v3' 'v4' 'v5' 'v6' 'v8' 'v9' 'v10' 'v11' 'v12' 'v13' 'v14' 'v15' 'v16' 'v17' 'v18' 'v19' 'v20' 'v21' 
-								'alea1'  'alea3'  'alea5'  'alea6'  'alea7'   'alea8' 'alea10' 'alea11' 'alea12' 'alea13' 'alea14' 'alea15'
-							  'alea16' 'alea17' 'alea18' 'alea20' 'alea21' 'alea23' 'alea24' 'alea25' 'alea26' 'alea27' 'alea28' 'alea31' 
-								'alea33' 'alea34' 'alea35' 'alea37' 'alea39' 'alea40' 'alea43' 'alea44' 'alea46' 'alea47' 'alea48' 'alea49'
-							  'alea50' 'alea52' 'alea54' 'alea55' 'alea56' 'alea58' 'alea60' 'alea61' 'alea62' 'alea64' 'alea65' 'alea66' 
-								'alea67' 'alea68' 'alea69' 'alea70' 'alea72' 'alea73' 'alea74' 'alea75' 'alea76' 'alea77' 'alea78' 'alea79'
-							  'alea80' 'alea81' 'alea82' 'alea83' 'alea84' 'alea85' 'alea86' 'alea87' 'alea88' 'alea89' 'alea90' 'alea94' 
-								'alea95' 'alea96' 'alea97' 'alea98' 'alea99' 'alea100']
+		'alea1'  'alea3'  'alea5'  'alea6'  'alea7' 'alea8' 'alea10' 'alea11' 'alea12' 'alea13' 'alea14' 'alea15'
+		'alea16' 'alea17' 'alea18' 'alea20' 'alea21' 'alea23' 'alea24' 'alea25' 'alea26' 'alea27' 'alea28' 'alea31' 
+		'alea33' 'alea34' 'alea35' 'alea37' 'alea39' 'alea40' 'alea43' 'alea44' 'alea46' 'alea47' 'alea48' 'alea49'
+		'alea50' 'alea52' 'alea54' 'alea55' 'alea56' 'alea58' 'alea60' 'alea61' 'alea62' 'alea64' 'alea65' 'alea66' 
+		'alea67' 'alea68' 'alea69' 'alea70' 'alea72' 'alea73' 'alea74' 'alea75' 'alea76' 'alea77' 'alea78' 'alea79'
+		'alea80' 'alea81' 'alea82' 'alea83' 'alea84' 'alea85' 'alea86' 'alea87' 'alea88' 'alea89' 'alea90' 'alea94' 
+		'alea95' 'alea96' 'alea97' 'alea98' 'alea99' 'alea100']
 
 ## alpha = 0.001
 print(importance > 0.05)
@@ -432,10 +427,19 @@ feature_names: ['v4' 'v5' 'v8' 'v9' 'v10' 'v11' 'v12' 'v13' 'v15' 'v16' 'v17' 'v
 ## Without Feature Selection
 
 $$
-Accuracy:92.1359 \%\\
-Precision: 92.1531 \%\\
-Recall: 92.1359 \%\\
-f1: 92.1358 \%\\
+Accuracy:92.1359\\%
+$$
+
+$$
+Precision: 92.1531\\%
+$$
+
+$$
+Recall: 92.1359\\%
+$$
+
+$$
+f1 : 92.1358\\%
 $$
 
 |  | True | False |
@@ -443,13 +447,10 @@ $$
 | Pred. True | 10729 | 1031 |
 | Pred. False | 804 | 10770 |
 
-![Fig. 8-1](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/Untitled%203.png)
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/58c3c9a3-9a95-445e-9c79-8dbff38b337e">
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/eb668cd7-121f-493d-869d-deae892af283">
 
-Fig. 8-1
-
-![Fig. 8-2](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%206.png)
-
-Fig. 8-2
+Fig. 8-1 & Fig. 8-2
 
 ## Lasso Feature Selection
 
@@ -469,10 +470,19 @@ Best score: 0.9193
 ### Model Performance
 
 $$
-Accuracy: 92.3631 \%\\
-Precision: 92.3826 \%\\
-Recall: 92.3631 \%\\
-f1: 92.3629 \%\\
+Accuracy: 92.3631 \\%
+$$
+
+$$
+Precision: 92.3826 \\%
+$$
+
+$$
+Recall: 92.3631 \\%
+$$
+
+$$
+f1: 92.3629 \\%
 $$
 
 |  | True | False |
@@ -480,13 +490,10 @@ $$
 | Pred. True | 10748 | 1012 |
 | Pred. False | 770 | 10804 |
 
-![Fig. 9-1](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/Untitled%204.png)
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/3811daf0-351e-42d0-bf3d-9860e97c11ef">
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/d01d9339-31f6-44f1-be70-544359aa6929">
 
-Fig. 9-1
-
-![Fig. 9-2](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%207.png)
-
-Fig. 9-2
+Fig. 9-1 & Fig. 9-2
 
 ## With Stepwise Selection
 
@@ -506,10 +513,19 @@ Best score: 0.9148
 ### Model Performance
 
 $$
-Accuracy: 91.9559 \%\\
-Precision: 91.9924 \%\\
-Recall: 91.9559 \%\\
-f1: 91.9552 \%\\
+Accuracy: 91.9559 \\%
+$$
+
+$$
+Precision: 91.9924 \\%
+$$
+
+$$
+Recall: 91.9559 \\%
+$$
+
+$$
+f1: 91.9552 \\%
 $$
 
 |  | True | False |
@@ -517,25 +533,19 @@ $$
 | Pred. True | 10654 | 1106 |
 | Pred. False | 771 | 10803 |
 
-![Fig. 10-1](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/Untitled%205.png)
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/3bb01c38-bb2a-4dc8-92e8-9dfd230e9779">
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/e3f9dcea-7ef1-4382-a3c2-95c559988b83">
 
-Fig. 10-1
-
-![Fig. 10-2](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%208.png)
-
-Fig. 10-2
+Fig. 10-1 & Fig. 10-2
 
 ## Model Complexity
 
 在模型複雜度測試中，Lasso 的表現大致比 Stepwise 要好，這點是可預期的，吻合上面的結果。兩組均在 Log(C) = -2, -3 左右時分別有最低的 Error。但兩者均呈現出一個現象就是 $Train\ Error > Test\ Error$，在撇除 code 有問題的情況下 (附在下面)，可能就是剛好 testing data 比較好 fit，至於其他原因目前還沒想到，若有更新會隨後補上。
 
-![Fig. 11-1](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%209.png)
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/fa00f11e-ad0e-47d3-ab02-3dc60095c547">
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/48f038a2-73c0-4496-a65c-9341498aa28d">
 
-Fig. 11-1
-
-![Fig. 11-2](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%2010.png)
-
-Fig. 11-2
+Fig. 11-1 & Fig. 11-2
 
 ```python
 C_range = [ 10**i for i in range(-4, 5) ]
