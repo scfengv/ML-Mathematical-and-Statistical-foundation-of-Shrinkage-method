@@ -21,54 +21,91 @@ kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 42)
 
 Shrinkage method 包含了 Lasso regression 和 Ridge regression 兩種，可以視為 Ordinary Least square 的修正。Ordinary Least square 存在著一個問題，OLS model 可以很好的擬合一個 Training data (Low Bias)，但會在未知的 data (Validation, Testing data) 表現較差，稱為 High Variance，原因多半是因為在擬合 Training set 的時候有 Overfitting 發生。為了修正這個問題，引入了 Shrinkage method，藉由一個和 model 和 data 無關的 $\lambda$  項 (penalty term) 來調節每個變數對於模型的權重，藉由「不要預測那麼準」(Increase Bias) 的方式來提升模型對於未知的資料的可預測性 (Reduce Variance)。這個 Variance 和 Bias 的消長過程稱為 Variance-Bias Trade-off，而最佳的平衡點 $\lambda$ 可以透過 Cross Validation 的方式找到。
 
-![Fig. 1 [1]](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/Untitled.png)
+![Untitled](https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/bb9513c4-3c60-4028-bb50-d7cfdfed78c5)
 
 Fig. 1 [1]
 
 Fig. 2 即是一個很好的例子，藍線 ($\lambda = 0$) 代表 OLS，在右圖可以很清楚地看到這條線產生了 Overfitting，太過度被某些的資料點影響導致模型不太可能可以應用在普遍的情況，在引入 $\lambda$ 後，會在擬合時傾向對某變數產生很大權重的時候對其做「懲罰」，而降低權重以此避免 Overfitting。但這項 $\lambda$ 也不可以太大，如左圖的 $\lambda = 100$ (紅線)，回歸線變為一條幾乎是平坦的直線 ( $y = 1.7$ )，也就是說不管 $x_1$ 為多少，模型都猜 $y=1.7$，這是一個明顯的 Underfitting 的現象。而 $\lambda$ 的調節也可以透過做 Cross Validation 的方式去判斷。
 
-![Fig. 2 [2]](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/Untitled%201.png)
-
-Fig. 2 [2]
-
-![Fig. 3 [3]](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/Untitled%202.png)
-
-Fig. 3 [3]
+<img width="500" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/e2b9dd5a-9789-4f6a-a273-7e6b24c90db8">
+<img width="300" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/9f9a4eaa-6a63-4bef-bc05-d37c1e5e6a8d">
+Fig. 2 [2] & Fig. 3 [3]
 
 以下會分別透過 Bayesian 和 Gradient Descent 的方式去嘗試說明 Shrinkage method 是如何透過 $\lambda$ penalty term 去對 OLS model 做修正
 
 ## Bayesian
 
-$$
-Ordinary\ Least\ square:y=X\beta+\varepsilon\\
----------------\\
-Problem\ of\ OLS:\hat{\beta}_{OLS}\ have\ high\ variance\\
- Small\ \Delta x \ would\ lead\ to \ Large\ \Delta \beta \\
-In\ machine\ learning: Bad\ prediction\ for\ Test\ data\\
----------------\\
-Varianve-Bias\ \ Trade-off:\\
-Regularization\\
-Lasso:\hat{\beta}_{L1}:\arg \min_{\beta}[{\color{blue}{\|y-X\beta\|}_2\ ^2}+{\color{red}\lambda\|\beta\|_1}]\\
+$Ordinary\ Least\ square$
 
-Ridge:\hat{\beta}_{L2}:\arg \min_{\beta}[{\color{blue}{\|y-X\beta\|}_2\ ^2}+{\color{red}\lambda\|\beta\|_2\ ^2}]\\--------------\\
-\|\beta\|_1=\sum_{i=1}^N |\beta_i|\\
-\ \ \ \ \ \ \ \ \ \ \|\beta\|_2 =\Big[\ \sum_{i=1}^N (\beta_i)^2\ \Big]^{\frac{1}{2}}\\
-\ \ \ \ \ \ \ \ \ \ \|\beta\|_p =\Big[\ \sum_{i=1}^N (\beta_i)^p\ \Big]^{\frac{1}{p}}
+$$
+y=X\beta+\varepsilon
+$$
+
+$$
+Problem\ of\ OLS\ :\ \hat{\beta}_{OLS}\ have\ high\ variance
+$$
+
+$$
+Small\ \Delta x \ would\ lead\ to \ Large\ \Delta \beta , which\ will\ lead\ to\ bad\ prediction\ for\ test\ set\ in\ ML
+$$
+
+***Varianve-Bias Trade-off***
+
+$Regularization$
+
+$$
+Lasso\ :\ \hat{\beta}_{L1} = \arg \min _{\beta} [{\color{blue}{ |y-X \beta |}_2^2} + {\color{red} \lambda \| \beta \|_1}]
+$$
+
+$$
+Ridge\ :\ \hat{\beta}_{L2} = \arg \min _{\beta} [{\color{blue}{ |y-X \beta |}_2^2} + {\color{red} \lambda \| \beta \|_2^2}]
+$$
+
+
+$$
+\left \| \beta\right \|_1 = \sum _{i=1}^{N} \left | \beta_i \right |
+$$
+
+$$
+\left \| \beta\right \|_2 = [\sum _{i=1}^{N} (\beta_i)^2]^{\frac{1}{2}}
+$$
+
+$$
+\left \| \beta\right \|_p = [\sum _{i=1}^{N} (\beta_i)^p]^{\frac{1}{p}}
 $$
 
 藍色的部分為 Error，即實際值 ($true\ y$) 和預測值 ($pred.\ y,\ X \beta$) 之間的差值 (MSE)，即為原本的 OLS model
 
-紅色部分即為由 $\lambda$ 所驅使的 Regularization，也可稱為 Penalty term。$\lambda$ 的大小即為懲罰的強弱，可以使 $\beta$ 盡量的縮小，甚至在 Lasso regression 中可以將 $\beta =0$，即將此 variable 從 model 中移除
+紅色部分即為由 $\lambda$ 所驅使的 Regularization，也可稱為 Penalty term。 $\lambda$ 的大小即為懲罰的強弱，可以使 $\beta$ 盡量的縮小，甚至在 Lasso regression 中可以將 $\beta =0$，即將此 variable 從 model 中移除
 
 至於 Shrinkage method 是如何透過調控 $\lambda$ 的大小去做到降低 OLS 的 variance，可以透過 Bayesian 的觀點去理解
 
+
+### Bayesian viewpoint
+
+
 $$
-Bayesian\ viewpoint\\
-\hat{\beta}_{MAP}=\arg \max_{\beta}P(\beta|y)\\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\arg \max_{\beta}(\frac{P(y|\beta)*P(\beta)}{P(y)})\\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\arg \max_{\beta}({\color{blue}P(y|\beta)}*{\color{red}P(\beta)})\\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\arg \max_{\beta}[\ {\color{blue}log(P(y|\beta))}+{\color{red}log(P(\beta))}\ ]\\-----------------\\
-{\color{blue}P(y|\beta)}:Likelihood\\{\color{red}P(\beta)}:Prior\\
+\hat{\beta} = {\arg \max_{\beta}} P(\beta|y)
+$$
+
+$$
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ = {\arg \max_{\beta}} ( \frac{P(y|\beta) * P(\beta)}{P(y)})
+$$
+
+$$
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\arg \max_{\beta}({\color{blue}P(y|\beta)}*{\color{red}P(\beta)})
+$$
+
+$$
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\arg \max_{\beta}[\ {\color{blue}log(P(y|\beta))}+{\color{red}log(P(\beta))}\ ]
+$$
+
+$$
+{\color{blue}P(y|\beta)}\ :\ Likelihood
+$$
+
+$$
+{\color{red}P(\beta)}\ :\ Prior
 $$
 
 $\hat{\beta}_{MAP}$ 是最大後驗機率 (Maximum a posterior)，是指找出在給定資料 $y$ 下，出現機率最大的 $\beta$
@@ -77,51 +114,85 @@ $\hat{\beta}_{MAP}$ 是最大後驗機率 (Maximum a posterior)，是指找出�
 
 紅色的部分為這裡的重點，稱為 Prior，指在沒有給定條件下，觀察到 $\beta$ 的機率，可以理解為 $\beta$ 的機率分佈或對 $\beta$ 的假設
 
+$Assume$
+
 $$
-Assume\ y_i \sim N(\beta^Tx_i\ ,\  \sigma^2)\\\ \ \ \ \ \ \ \ \beta_j \sim N(0,\ \tau^2)\\-----------------\\\beta \ under\ a\ {\color{red}Gaussian\ prior}:\\
-P(y|\beta)=\prod_{i=1}^N\ \frac{1}{\sigma\sqrt{2\pi}}\ exp(-{(y_i-\beta^Tx_i)^2\over 2\sigma^2})\\
+y_i \sim N(\beta^Tx_i\ ,\  \sigma^2)
+$$
 
-Log(P(y|\beta))= \sum_{i=1}^N\ [\ log(\frac{1}{\sigma\sqrt{2\pi}})-{(y_i-\beta^Tx_i)^2\over 2\sigma^2}\ ]\\
+$$
+\beta_j \sim N(0,\ \tau^2)
+$$
 
-\arg \min_{\beta}[\ \|y-X\beta\|_2\ ^2+\frac{\sigma^2}{\tau^2}\|\beta\|_2\ ^2\ ]\\\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\arg \min_{\beta}[\ \|y-X\beta\|_2\ ^2+{\color{red}\lambda}\|\beta\|_2\ ^2\ ]=\hat{\beta}_{L2}\rightarrow {\color{red}Ridge}\\
-------------------\\
-\beta \ under\ a\ {\color{red}Laplacian\ prior}:\\
-P(y|\beta)=\prod_{i=1}^N\ \frac{1}{2b}\ exp(-\frac{|y_i-\beta^Tx_i|}{b})\\
+#### $\beta \ under\ a\ {\color{red}Gaussian\ prior}$
 
-Log(P(y|\beta))= \sum_{i=1}^N\ [\ log(\frac{1}{2b})-{(y_i-\beta^Tx_i)\over b}\ ]\\
+$$
+P(y| \beta)=\prod_{i=1}^{N} \frac{1}{\sigma\sqrt{2\pi}} \exp (- \frac{(y_i - \beta^T x_i)^2}{2 \sigma^2})
+$$
 
-\arg \min_{\beta}[\ \|y-X\beta\|_2\ ^2+\frac{\sigma^2}{\tau^2}\|\beta\|_1\ ]\\\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ =\arg \min_{\beta}[\ \|y-X\beta\|_2+{\color{red}\lambda}\|\beta\|_1\ ]=\hat{\beta}_{L1}\rightarrow {\color{red}Lasso}
+$$
+Log(P(y|\beta))= \sum_{i=1}^N\ [\ log(\frac{1}{\sigma\sqrt{2\pi}})- \frac{(y_i - \beta^T x_i)^2}{2 \sigma^2} ]
+$$
+
+$$
+{\arg \min_{\beta}} [|| y - X \beta||_2^2 + \frac{\sigma^2}{\tau^2} || \beta ||_2^2]
+$$
+
+$$
+= {\arg \min_{\beta}} [|| y - X \beta||_2^2 + {\color{red} \lambda} || \beta ||_2^2] = \left \| \left \| \beta\right \| \right \|_2 \rightarrow \ {\color{red} Ridge}
+$$
+
+#### $\beta \ under\ a\ {\color{red}Laplacian\ prior}$
+
+$$
+P(y| \beta)=\prod_{i=1}^{N} \frac{1}{2b} \exp (- \frac{|y_i - \beta^T x_i|}{b})
+$$
+
+$$
+Log(P(y|\beta))= \sum_{i=1}^N\ [\ log(\frac{1}{2b})- \frac{(y_i - \beta^T x_i)}{b} ]
+$$
+
+$$
+{\arg \min_{\beta}} [|| y - X \beta||_2^2 + \frac{\sigma^2}{\tau^2} || \beta ||_1]
+$$
+
+$$
+= {\arg \min_{\beta}} [|| y - X \beta||_2^2 + {\color{red} \lambda} || \beta ||_1] = \left \| \left \| \beta\right \| \right \|_1 \rightarrow \ {\color{red} Lasso}
 $$
 
 可以看到 Regularization 在透過引入對 $\beta$ 的假設後可以透過不同的機率分佈假設在 Bayesian 下得到和一開始的 Lasso 和 Ridge 一樣的結果
 已知 lambda 表示為 Regularization 的強度，可以透過對 $\beta$ 的假設機率分佈知道，當 $\lambda$ 越大 ($\tau^2$ 越小)，則機率分佈應該會使 $\beta$ 更靠近 0 (Fig. 4, 綠 → 橘 → 藍)，而在不同的 Prior 下，Gaussian distribution (Ridge, Fig. 4-1) 是圍繞在 0 的周圍隨機分佈，而 Laplacian distribution (Lasso, Fig. 4-2) 則是指定大部分的係數為 0，進而達到 Feature Selection 的目的
 
-![Fig. 4-1](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot.png)
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/ff62c5a3-9236-4645-be4e-c8335f2cf270">
+<img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/b996d417-b783-42d5-838c-711a9a1bf089">
 
-Fig. 4-1
-
-![Fig. 4-2](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/newplot%201.png)
-
-Fig. 4-2
+Fig. 4-1 & Fig. 4-2
 
 另外，Lasso and Ridge 的這兩條 $\arg \min$ 數學式也可以表示為
 
 $$
-Lasso:\arg \min_{\beta}[{\|y-X\beta\|}_2\ ^2+\lambda\|\beta\|_1]\\
-
-Ridge:\arg \min_{\beta}[
-{\|y-X\beta\|}_2\ ^2+\lambda\|\beta\|_2\ ^2]
+Lasso\ :\ {\arg \min_{\beta}} [{\|y-X\beta\|}_2\ ^2+\lambda\|\beta\|_1]
 $$
 
 $$
-For\ every\ value\ of\ \lambda, there\ is\ a\ ''s''\ that\ satisfy:\\
-Lasso:min\Big\{\ \sum_{i=1}^N (y_i-\beta_0-\sum_{j=1}^p\beta_jx_{ij})^2\ \Big\}\ subject\ to\ \sum_{j=1}^p |\beta_j|\leq s\\
-Ridge:min\Big\{\ \sum_{i=1}^N (y_i-\beta_0-\sum_{j=1}^p\beta_jx_{ij})^2\ \Big\}\ subject\ to\ \sum_{j=1}^p \beta_j^2\leq s
+Ridge\ :\ {\arg \min_{\beta}} [{\|y-X\beta\|}_2\ ^2+\lambda\|\beta\|_2^2]
+$$
+
+$$
+For\ every\ value\ of\ \lambda, there\ is\ a\ ''s''\ that\ satisfy:
+$$
+
+$$
+Lasso:min \lbrace \sum_{i=1}^N (y_i-\beta_0-\sum_{j=1}^p\beta_jx_{ij})^2\ \rbrace \ subject\ to\ \sum_{j=1}^p |\beta_j|\leq s
+$$
+
+$$
+Ridge:min \lbrace \sum_{i=1}^N (y_i-\beta_0-\sum_{j=1}^p\beta_jx_{ij})^2 \rbrace \ subject\ to\ \sum_{j=1}^p \beta_j^2\leq s
 $$
 
 若分別將 Lasso 和 Ridge 的條件在 2D 下畫出來 (Fig. 5)，即可發現 Lasso 的 $\beta_j$ 是被限制在一個頂點在兩軸上的平面四邊形內 ( $|\beta_1|+|\beta_2| \leq s$ )，而 Ridge 的 $\beta_j$ 是被限制在一個圓中 ( $\beta_1^2+\beta_2^2 \leq s$ )， $\hat{\beta}$ 為 Least square 的解，紅色的線為等 RSS 線。如前面所述，導入 penalty term $\lambda$ 是一個透過不要預測的太準 (Increase Bias) 去交換一個對不同資料的適應性 (Reduce Variance) 的過程，在數學上，即為透過增加 RSS，來找到滿足邊界條件的第一個交點，此交點即為滿足條件下的最佳解。而因為邊界條件設定的關係，等 RSS 線多會交在 Lasso 四邊形的頂點 (條件設定的關係，頂點會在軸上) ，會造成不在該軸上的 $\beta_j=0$，即為前面所提到的 Feature Selection 的過程。至於多維度的情況大致也可以遵照這個想法去擴張。
 
-![Fig. 5](Mathematical%20and%20Statistical%20foundation%20of%20Shrinka%2087dc5f74e4e44e2f9ec9bc3946e23e1a/IMG_CDC01411653B-1.jpeg)
+![IMG_CDC01411653B-1](https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/6f549137-3e2d-453f-b001-f08f1d32a927)
 
 Fig. 5
 
