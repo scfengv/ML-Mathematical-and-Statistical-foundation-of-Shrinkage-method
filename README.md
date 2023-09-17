@@ -4,6 +4,8 @@
 - Abstract
 - Introduction
 - Shrinkage method in Mathematic and Statistic
+	- Bayesian
+	- Gradient Descent
 - Lasso Feature Selection
 - Logistic Regression
 - Reference
