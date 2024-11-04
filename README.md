@@ -12,16 +12,18 @@
 
 # Abstract
 
-本文將探討 Shrinkage method 背後的數學和統計學基礎，並透過 Bayesian 和 Gradient descent 兩種觀點去了解 Lasso 和 Ridge 兩者根本上的差異。最後使用著名的人工資料 wave dataset 嘗試將原始資料的 121 個變數透過 Lasso regression 和 Stepwise selection 簡化到分別剩 14 和 9 個變數，並用 Logistic regression 進行分類比較，分類準確度分別高達 92.36% 和 91.96%。
+This article explores the mathematical and statistical foundations behind shrinkage methods and uses Bayesian and gradient descent perspectives to understand the fundamental differences between Lasso and Ridge regression. Finally, I employed the well-known artificial wave dataset to reduce the original 121 variables to 14 and 9 variables using Lasso regression and stepwise selection, respectively. I then perform classification comparisons using logistic regression, achieving classification accuracies of 92.36% and 91.96%, respectively.
 
 # Introduction
 
-本文使用的是一個著名的人工資料 wave dataset (Breiman et al., 1984)，在原始資料中原有 21 個 variables，在 2005 年時，Rakotomalala 在資料集中加入了 100 個 noise variables，使其成為了一筆 (33334, 121) 的資料。變數名稱 v1, v2, …, v21, alea1, alea2, …, alea100，並沒有什麼資訊可以從名稱中獲得，但可以大致推斷 v1, v2, …, v21 (以下簡稱 v 類變數) 為原始資料集中的 21 個變數，而 alea1, alea2, …, alea100 (以下簡稱為 a 類變數) 為 Rakotomalala 後來加入的 noise variables，故在開始做任何學習前對結果有兩個簡單的猜測 
-1. 「v 類變數比較重要」
-2. 「a 類變數對於模型沒有幫助或甚至會傷害模型」
-所以可以期望的是在做 Variable selection 的結果中最好只包含 v 類變數而沒有 a 類變數。
+I utilized the well-known artificial wave dataset (Breiman *et al.*, 1984) in this study. The original dataset contained 21 variables. In 2005, Rakotomalala added 100 noise variables to the dataset, resulting in a dataset with dimensions (33334, 121). The variable names are v1, v2, …, v21, alea1, alea2, …, alea100. While the names do not provide much information, I can infer that v1, v2, …, v21 (hereafter referred to as v-type variables) are the original variables in the dataset, and alea1, alea2, …, alea100 (hereafter referred to as a-type variables) are the noise variables added by Rakotomalala. Before commencing any analysis, I have two simple hypotheses regarding the results:
 
-另外，在拿到資料集時，資料大致依分類目標結果分為上下半部，故在做 K-Folds Cross Validation 時，需要做不同於以往簡單 K-Folds 的 `StratifiedKFold` 分層抽樣，此 CV 方法讓各 Fold 保有和母體一樣類別比例，可以確保各 Fold 不會因為初始 data 的排序等因素而有類別上的偏差。
+1. "V-type variables are more important"
+2. "A-type variables do not help the model and may even harm it"
+3. 
+Therefore, I expect that the result of variable selection should ideally include only V-type variables and exclude A-type variables.
+
+Additionally, upon examining the dataset, the data is roughly divided into upper and lower halves according to the classification target results. Therefore, when performing K-Fold Cross Validation,I need to use stratified sampling different from the usual simple K-Folds, specifically `StratifiedKFold`. This cross-validation method ensures that each fold maintains the same class proportion as the entire dataset, preventing class bias in each fold due to initial data ordering and other factors.
 
 ```python
 kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 42)
@@ -29,19 +31,19 @@ kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state = 42)
 
 # Shrinkage method in Mathematic and Statistic
 
-Shrinkage method 包含了 Lasso regression 和 Ridge regression 兩種，可以視為 Ordinary Least square 的修正。Ordinary Least square 存在著一個問題，OLS model 可以很好的擬合一個 Training data (Low Bias)，但會在未知的 data (Validation, Testing data) 表現較差，稱為 High Variance，原因多半是因為在擬合 Training set 的時候有 Overfitting 發生。為了修正這個問題，引入了 Shrinkage method，藉由一個和 model 和 data 無關的 $\lambda$  項 (penalty term) 來調節每個變數對於模型的權重，藉由「不要預測那麼準」(Increase Bias) 的方式來提升模型對於未知的資料的可預測性 (Reduce Variance)。這個 Variance 和 Bias 的消長過程稱為 Variance-Bias Trade-off，而最佳的平衡點 $\lambda$ 可以透過 Cross Validation 的方式找到。
+Shrinkage methods include Lasso regression and Ridge regression, which can be seen as modifications of Ordinary Least Squares (OLS). OLS has a problem: the OLS model can fit the training data very well (low bias), but performs poorly on unseen data (validation and testing data), exhibiting high variance. This is often due to overfitting when fitting the training set. To address this issue, shrinkage methods introduce a $\lambda$ term (penalty term) that is independent of the model and data to adjust the weight of each variable in the model. By “not predicting so accurately” (increasing bias), we enhance the model’s predictability on unseen data (reducing variance). This trade-off between variance and bias is known as the Variance-Bias Trade-off, and the optimal balance point $\lambda$ can be found through cross-validation.
 
 ![Untitled](https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/bb9513c4-3c60-4028-bb50-d7cfdfed78c5)
 
 Fig. 1 [1]
 
-Fig. 2 即是一個很好的例子，藍線 ($\lambda = 0$) 代表 OLS，在右圖可以很清楚地看到這條線產生了 Overfitting，太過度被某些的資料點影響導致模型不太可能可以應用在普遍的情況，在引入 $\lambda$ 後，會在擬合時傾向對某變數產生很大權重的時候對其做「懲罰」，而降低權重以此避免 Overfitting。但這項 $\lambda$ 也不可以太大，如左圖的 $\lambda = 100$ (紅線)，回歸線變為一條幾乎是平坦的直線 ( $y = 1.7$ )，也就是說不管 $x_1$ 為多少，模型都猜 $y=1.7$，這是一個明顯的 Underfitting 的現象。而 $\lambda$ 的調節也可以透過做 Cross Validation 的方式去判斷。
+Figure 2 is an excellent example. The blue line ($\lambda = 0$) represents OLS. In the right figure, we can clearly see that this line results in overfitting, being overly influenced by certain data points, making the model less applicable in general situations. After introducing $\lambda$, the fitting process tends to “penalize” variables when they acquire large weights, reducing the weights to avoid overfitting. However, $\lambda$ cannot be too large. For instance, when $\lambda = 100$ (red line) in the left figure, the regression line becomes almost flat ($y = 1.7$), meaning that regardless of the value of $x_1$, the model predicts $y = 1.7$. This is a clear case of underfitting. The adjustment of $\lambda$ can be determined through cross-validation.
 
 <img width="500" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/e2b9dd5a-9789-4f6a-a273-7e6b24c90db8">
 <img width="300" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/9f9a4eaa-6a63-4bef-bc05-d37c1e5e6a8d">
 Fig. 2 [2] & Fig. 3 [3]
 
-以下會分別透過 Bayesian 和 Gradient Descent 的方式去嘗試說明 Shrinkage method 是如何透過 $\lambda$ penalty term 去對 OLS model 做修正
+Below, I will attempt to explain how shrinkage methods use the $\lambda$ penalty term to adjust the OLS model from both Bayesian and Gradient Descent perspectives.
 
 ## Bayesian
 
@@ -84,11 +86,11 @@ $$
 \left \| \beta\right \|_p = [\sum _{i=1}^{N} (\beta_i)^p]^{\frac{1}{p}}
 $$
 
-藍色的部分為 Error，即實際值 ($true\ y$) 和預測值 ($pred.\ y,\ X \beta$) 之間的差值 (MSE)，即為原本的 OLS model
+The blue part represents the error, i.e., the Mean Squared Error (MSE) between the actual value ($y$) and the predicted value ($X\beta$), which is the original OLS model.
 
-紅色部分即為由 $\lambda$ 所驅使的 Regularization，也可稱為 Penalty term。 $\lambda$ 的大小即為懲罰的強弱，可以使 $\beta$ 盡量的縮小，甚至在 Lasso regression 中可以將 $\beta =0$，即將此 variable 從 model 中移除
+The red part is the regularization driven by $\lambda$, also known as the penalty term. The magnitude of $\lambda$ represents the strength of the penalty, which can shrink $\beta$ as much as possible, even setting $\beta = 0$ in Lasso regression, effectively removing the variable from the model.
 
-至於 Shrinkage method 是如何透過調控 $\lambda$ 的大小去做到降低 OLS 的 variance，可以透過 Bayesian 的觀點去理解
+How does the shrinkage method reduce the variance of OLS by adjusting the value of $\lambda$? We can understand this from a Bayesian perspective.
 
 
 ### Bayesian viewpoint
@@ -118,11 +120,11 @@ $$
 {\color{red}P(\beta)}\ :\ Prior
 $$
 
-$\hat{\beta}_{MAP}$ 是最大後驗機率 (Maximum a posterior)，是指找出在給定資料 $y$ 下，出現機率最大的 $\beta$
+$\hat{\beta}_{MAP}$ is the Maximum A Posteriori estimate, which seeks the value of $\beta$ that maximizes the posterior probability given the data $y$.
 
-藍色的部分為 Likelihood function，指在給定 $\beta$ 的情況下，觀察到特定 $y$ 的機率
+The blue part is the likelihood function, representing the probability of observing specific $y$ given $\beta$.
 
-紅色的部分為這裡的重點，稱為 Prior，指在沒有給定條件下，觀察到 $\beta$ 的機率，可以理解為 $\beta$ 的機率分佈或對 $\beta$ 的假設
+The red part is the prior, representing the probability of $\beta$ without any given conditions; it can be understood as the probability distribution or assumptions about $\beta$.
 
 $Assume$
 
@@ -170,15 +172,16 @@ $$
 = {\arg \min_{\beta}} [|| y - X \beta||_2^2 + {\color{red} \lambda} || \beta ||_1] = \left \| \left \| \beta\right \| \right \|_1 \rightarrow \ {\color{red} Lasso}
 $$
 
-可以看到 Regularization 在透過引入對 $\beta$ 的假設後可以透過不同的機率分佈假設在 Bayesian 下得到和一開始的 Lasso 和 Ridge 一樣的結果
-已知 lambda 表示為 Regularization 的強度，可以透過對 $\beta$ 的假設機率分佈知道，當 $\lambda$ 越大 ($\tau^2$ 越小)，則機率分佈應該會使 $\beta$ 更靠近 0 (Fig. 4, 綠 → 橘 → 藍)，而在不同的 Prior 下，Gaussian distribution (Ridge, Fig. 4-1) 是圍繞在 0 的周圍隨機分佈，而 Laplacian distribution (Lasso, Fig. 4-2) 則是指定大部分的係數為 0，進而達到 Feature Selection 的目的
+By introducing assumptions about $\beta$, regularization can, through different probability distributions, result in the same expressions for Lasso and Ridge as we had initially.
+
+Knowing that $\lambda$ represents the strength of regularization, we can understand from the assumed probability distributions of $\beta$ that as $\lambda$ increases (i.e., as $\tau^2$ decreases), the probability distribution will make $\beta$ closer to 0 (Fig. 4, green → orange → blue). Under different priors, the Gaussian distribution (Ridge, Fig. 4-1) is a random distribution around 0, while the Laplacian distribution (Lasso, Fig. 4-2) specifies that most coefficients are 0, thus achieving the purpose of feature selection.
 
 <img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/ff62c5a3-9236-4645-be4e-c8335f2cf270">
 <img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/b996d417-b783-42d5-838c-711a9a1bf089">
 
 Fig. 4-1 & Fig. 4-2
 
-另外，Lasso and Ridge 的這兩條 $\arg \min$ 數學式也可以表示為
+Additionally, the two $\arg \min$ expressions for Lasso and Ridge can also be represented as:
 
 $$
 Lasso\ :\ {\arg \min_{\beta}} [{\|y-X\beta\|}_2\ ^2+\lambda\|\beta\|_1]
@@ -188,10 +191,7 @@ $$
 Ridge\ :\ {\arg \min_{\beta}} [{\|y-X\beta\|}_2\ ^2+\lambda\|\beta\|_2^2]
 $$
 
-$$
-For\ every\ value\ of\ \lambda, there\ is\ a\ ''s''\ that\ satisfy:
-$$
-
+For every value of $\lambda$, there is an $s$ that satisfies:
 $$
 Lasso:min \lbrace \sum_{i=1}^N (y_i-\beta_0-\sum_{j=1}^p\beta_jx_{ij})^2\ \rbrace \ subject\ to\ \sum_{j=1}^p |\beta_j|\leq s
 $$
@@ -200,7 +200,7 @@ $$
 Ridge:min \lbrace \sum_{i=1}^N (y_i-\beta_0-\sum_{j=1}^p\beta_jx_{ij})^2 \rbrace \ subject\ to\ \sum_{j=1}^p \beta_j^2\leq s
 $$
 
-若分別將 Lasso 和 Ridge 的條件在 2D 下畫出來 (Fig. 5)，即可發現 Lasso 的 $\beta_j$ 是被限制在一個頂點在兩軸上的平面四邊形內 ( $|\beta_1|+|\beta_2| \leq s$ )，而 Ridge 的 $\beta_j$ 是被限制在一個圓中 ( $\beta_1^2+\beta_2^2 \leq s$ )， $\hat{\beta}$ 為 Least square 的解，紅色的線為等 RSS 線。如前面所述，導入 penalty term $\lambda$ 是一個透過不要預測的太準 (Increase Bias) 去交換一個對不同資料的適應性 (Reduce Variance) 的過程，在數學上，即為透過增加 RSS，來找到滿足邊界條件的第一個交點，此交點即為滿足條件下的最佳解。而因為邊界條件設定的關係，等 RSS 線多會交在 Lasso 四邊形的頂點 (條件設定的關係，頂點會在軸上) ，會造成不在該軸上的 $\beta_j=0$，即為前面所提到的 Feature Selection 的過程。至於多維度的情況大致也可以遵照這個想法去擴張。
+If we plot the constraints of Lasso and Ridge in 2D (Fig. 5), we can see that the $\beta_j$ in Lasso are constrained within a diamond-shaped region whose vertices lie on the axes ($|\beta_1| + |\beta_2| \leq s$), while the $\beta_j$ in Ridge are constrained within a circle ($\beta_1^2 + \beta_2^2 \leq s$). $\hat{\beta}$ is the solution from Least Squares, and the red lines are the contours of equal Residual Sum of Squares (RSS). As previously mentioned, introducing the penalty term $\lambda$ is a process of increasing bias to exchange for better adaptability to different data (reducing variance). Mathematically, this means finding the first intersection point that satisfies the boundary condition by increasing the RSS; this intersection point is the optimal solution under the constraint. Due to the boundary conditions, the contours of equal RSS often intersect at the vertices of the Lasso diamond (which lie on the axes due to the conditions), causing $\beta_j = 0$ for the axes not intersected, which is the feature selection process mentioned earlier. This idea can be extended to higher dimensions similarly.
 
 ![IMG_CDC01411653B-1](https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/6f549137-3e2d-453f-b001-f08f1d32a927)
 
@@ -209,8 +209,7 @@ Fig. 5
 
 ## Gradient Descent
 
-另外，也可以通過 Gradient Descent 的方式來理解 Lasso & Ridge
-這裡將 Linear Regression 透過 weight 和 bias 的方式表示，但大致和上面的表示方法大同小異
+Alternatively, we can understand Lasso and Ridge through gradient descent. Here, I express linear regression using weights and biases, which is similar to the previous representations.
 
 $$
 Linear\ Regression\ : \hat{y} = w_1x_1+w_2x_2+...+w_Nx_N+b
@@ -249,7 +248,7 @@ $$
 L_2=(wx+b-y)^2+\lambda w^2
 $$
 
-引入 Gradient Descent 並分別以三種情境帶入以觀察 $w$ 的變化
+By introducing gradient descent and considering the three scenarios, we observe the changes in $w$.
 
 $$
 w_{new}=w-\gamma \frac{\partial L}{\partial w}
@@ -312,16 +311,17 @@ $$
 =(w-H)-2\lambda w \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
 $$
 
-在這裡可以先假設 Linear Regression 完美 fit train data，但這也表示這個 model 對於陌生 data (validation, test data) 等的表現會較差，即上面所提到的 High variance
-(Overfitting)，所以在對 Linear Regression 引入 Regularization，可以對原始的 model 要 overfit 的時候做到懲罰，因為 $\lambda$ 是一個獨立於 model & data 的常數。從 L1 Regularization 的 $w_{new}$ 式中看到，當 $w>0$ 時， $-\lambda$ 會使 $w$ 不要那麼大， $w<0$ 時同理。而在 L2 Regularization 中也做了差不多的事。
+Here, we can first assume that the linear regression perfectly fits the training data. However, this also means that the model performs poorly on unfamiliar data (validation, test data), as previously mentioned (high variance due to overfitting). Introducing regularization to linear regression penalizes the model when it tends to overfit, since $\lambda$ is a constant independent of the model and data. From the expression for $w_{\text{new}}$ in L1 regularization, when $w > 0$, $-\lambda$ reduces $w$; similarly for $w < 0$. L2 regularization does something similar.
 
-所以綜合 Bayesian 和 Gradient descent 的結果，當 $\lambda$ 越大時，在 Bayesian 的結果中， $\beta_j$ distribution (both Lasso & Ridge) 會更集中在 0 左右，而在 Gradient descent的結果中， $|w_{new}|$ 會越小，簡單來說即為懲罰力道越強，可以使 $w$ 降低越多，進而達到避免 Overfitting 的結果，但也要注意 $\lambda$ 並非越小越好，而是在決定 $\lambda$ 的過程中會有 Variance-Bias Trade-off 的行為，所以需要透過 Cross Validation 來決定適合每個 model 的最佳 $\lambda$ 值。
+Combining the results from the Bayesian and gradient descent perspectives, as $\lambda$ increases, the $\beta_j$ distribution (both Lasso and Ridge) in the Bayesian result concentrates more around zero. In the gradient descent result, $|w_{\text{new}}|$ becomes smaller. Simply put, a stronger penalty reduces $w$ more, thus avoiding overfitting. However, note that $\lambda$ is not necessarily better when larger; the process of determining $\lambda$ involves a variance-bias trade-off behavior, so cross-validation is needed to find the optimal $\lambda$ for each model.
 
 # Lasso Feature Selection
 
-本文所使用的是 `sklearn.linear_model` 模組裡面的 `lasso` (glmnet.lasso 和 sklearn.lasso 大致相同，兩者的差別可以參考這兩篇文章: [Generalized Linear Models and Elastic Nets (GLMNET)](https://notebook.community/ceholden/glmnet-python/examples/glmnet_demo), [What are the differences between Ridge regression using R's glmnet and Python's scikit-learn?](https://stats.stackexchange.com/questions/160096/what-are-the-differences-between-ridge-regression-using-rs-glmnet-and-pythons))，要注意的是在 `sklearn` 中 $\lambda$ 被稱為 `alpha` ，但不會影響太多，以下以 $\lambda$ 表示。
+In this study, we use the Lasso function from the sklearn.linear_model module (which is similar to glmnet.lasso; differences can be found in these articles: [Generalized Linear Models and Elastic Nets (GLMNET)](https://notebook.community/ceholden/glmnet-python/examples/glmnet_demo), [What are the differences between Ridge regression using R's glmnet and Python's scikit-learn?](https://stats.stackexchange.com/questions/160096/what-are-the-differences-between-ridge-regression-using-rs-glmnet-and-pythons)). Note that in sklearn, $\lambda$ is referred to as alpha, but this does not affect the methodology; we will use $\lambda$ here.
 
-在理解了理論面後就可以實際應用 Lasso Regression 來做到 Feature Selection。觀察下面這張 Lasso Penalty vs. Coefficients 的圖 (Fig. 6-1)，可以看到隨著 $\lambda$ 值的提升，確實對 Coefficients 起到收斂的效果，而在 $\lambda > 10^{-0.5}$ 後所有係數都收縮到 0，也就是指模型中已經不含有任何變數，即為 Fig. 2 中左圖的狀況，模型已經變成一個常數值。可以從 Cross Validation 的結果中看到，表現最好的 $\lambda=10^{-3}$，選擇的變數為 21 個 v 類變數中的 13 個，在變數選擇上我有做了一些更動，由下圖可以發現，在 $\lambda = 10^{-3}$ 時，很多變數都還沒收斂到 0，故此時若挑選變數的門檻令為 Lasso Feature Selection 定義的 coef. > 0 的話，會將太多變數放入，故在 $\lambda = 10^{-3}$ 時，將門檻設為 coef. > 0.01。但在已經收斂的 $\lambda = 10^{-2}$ (但非 Cross Validation 選出的最高分參數)，即可將挑選變數門檻令為 coef. > 0，得出的結果差不多，但在 $\lambda = 10^{-2}$ 時被挑選的變數會多一個 `‘v20’`。
+After understanding the theory, we can apply Lasso regression for feature selection. Observing the Lasso Penalty vs. Coefficients graph below (Fig. 6-1), we can see that as $\lambda$ increases, the coefficients indeed converge. When $\lambda > 10^{-0.5}$, all coefficients shrink to zero, meaning the model contains no variables, which corresponds to the situation in the left plot of Fig. 2, where the model becomes a constant value. From the cross-validation results, the best performance is at $\lambda = 10^{-3}$, selecting 13 of the 21 V-type variables.
+
+In variable selection, adjustments were made. As shown below, at $\lambda = 10^{-3}$, many variables have not yet converged to zero. If we set the threshold for selecting variables as coefficients > 0, we would include too many variables. Therefore, at $\lambda = 10^{-3}$, the threshold was set as coefficients > 0.01. However, at the already converged $\lambda = 10^{-2}$ (though not the best parameter selected by cross-validation), setting the threshold as coefficients > 0 yields a similar result, but with one additional variable `v20`.
 
 <img width="600" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/33085962-37ff-4182-aab9-29c5f034fc87">
 
@@ -354,7 +354,7 @@ Selected Feature: ['v4' 'v5' 'v8' 'v9' 'v10' 'v11' 'v12' 'v13' 'v15' 'v16' 'v17'
 
 ## Compared Lasso with Stepwise Selection
 
-若將 Lasso 所選的變數和 Stepwise selection 做比較可以看到些微的不同。兩者都只有挑了 v 類變數，但從 Stepwise Selection 的 Performance 中可以看到，Accuracy 大致在 9 個變數以後就幾乎沒有再明顯增加。
+Comparing the variables selected by Lasso and stepwise selection, we see some differences. Both methods only selected V-type variables, but from the performance of stepwise selection, we can see that accuracy does not significantly increase after about 9 variables.
 
 ```python
 # Stepwise selection
@@ -366,7 +366,7 @@ Selected Feature: ['v9', 'v10', 'v11', 'v12', 'v13', 'v15', 'v16', 'v17', 'v18']
 
 Fig. 7
 
-但在挑選變數的過程中有一個非常非常有趣的現象，翻開 Stepwise 變數選擇的過程，可以看到在我先前的假設中，我認為 v 類變數是重要的，a 類變數只是 noise variables。但在 Stepwise selection 的選擇過程中，卻有一個 a 類變數 `‘alea81’` 是第 10 個被選中的，比剩下 12 個 v 類變數還要早進到 Feature group，第 11 個被選中的變數為 `‘v4’` ，而下一個被選中的 v 類變數 `‘v8’` 為第13 個。依照我的假設，前 21 個被選入的變數應該都要是 v 類變數，但在第 13 個 `‘v8’` 後到第 30 個之間都再沒有 v 類變數被選中。
+However, during the variable selection process, a very interesting phenomenon occurred. Looking into the stepwise variable selection process, we can see that contrary to our initial assumption that V-type variables are important and A-type variables are just noise, an A-type variable 'alea81' was selected as the 10th variable, entering the feature group earlier than the remaining 12 V-type variables. The 11th variable selected was 'v4', and the next V-type variable 'v8' was selected as the 13th variable. According to our assumption, the first 21 variables selected should all be V-type variables, but after the 13th variable 'v8', no more V-type variables were selected up to the 30th variable.
 
 ```python
 # Stepwise selection
@@ -390,12 +390,13 @@ feature_names: ['v4','v8','v9','v10','v11','v12','v13','v15','v16','v17','v18',
 		'alea81','alea85''alea95','alea98','alea100']
 ```
 
-而在 Lasso 有沒有發生類似的狀況呢？答案是有的，還記得我剛剛提到的  $\lambda$ 在 $10^{-3}$ 和 $10^{-2}$ 那邊的問題，之所以後來選擇 $\lambda=10^{-2}$ 的原因是因為在  $\lambda=10^{-3}$ 時大部分的 a 類變數係數都還沒有收斂，但如果看得更仔細一點會發現，在 $\lambda=10^{-3}$ 時，`’v1’, ‘v7’` 兩個 v 類變數已經收斂到 0 了，若將 coef. 門檻上調到 0.05 ( 沒有大太的實質意義 )，可以看到 a 類變數只剩 `‘alea70’` ，說明其實在  $\lambda=10^{-3}$ 時大部分的 a 類變數已經準備要收斂了，但可以發現 v 類變數中的 `‘v2’` 也消失了，而在 $\lambda=10^{-2}$ 時，`’v3’, ‘v4’, ‘v6’, ‘v14’, ‘v21’` 也都消失了。
+Did a similar situation occur with Lasso? The answer is yes. Recall the issue around $\lambda$ at $10^{-3}$ and $10^{-2}$. The reason for ultimately choosing $\lambda = 10^{-2}$ is that at $\lambda = 10^{-3}$, most A-type variables’ coefficients had not yet converged. Looking more closely, we find that at $\lambda = 10^{-3}$, two v-type variables 'v1' and 'v7' had already converged to zero. If we raise the coefficient threshold to 0.05 (no substantial meaning), we see that the only remaining a-type variable is 'alea70', indicating that at $\lambda = 10^{-3}$, most a-type variables were about to converge. However, we also find that the v-type variable 'v2' disappeared, and at $\lambda = 10^{-2}$, 'v3', 'v4', 'v6', 'v14', and 'v21' also disappeared.
 
-綜合以上兩段關於 Feature selection 時的發現可以看到，在開頭時的第一個猜想「v 類變數比較重要」大部分時間都是對的，但會在小部分時候失效，可能是門檻設定過於嚴苛，也有可能是 Rakotomalala 在加入這個雜訊的時候是有經過設計使加入的變數不會對結果有太重要的影響卻也不至於偏差太多。因為從 Fig. 7 中可以看到，其實在開始有 a 類變數加入後的 10 個變數以後的 model performance 並沒有明顯的上升，甚至在第 13 個 `‘v8’` 加入後，後面的表現幾乎持平，表示 a 類變數對於模型其實沒有什麼作用 (沒有幫助也沒有傷害)，因次可以對比開頭所下的猜想得出結論
-1.「v 類變數比較重要」
-2.「a 類變數對於模型沒有幫助或甚至會傷害模型」
-兩個想法都大致上是對的，但也都有特例的發生，至於在 a 類變數會傷害模型這點會留到後面進入分類學習的階段再做討論。
+Summarizing the findings during feature selection, we see that our initial hypothesis “v-type variables are more important” is generally correct but fails in some cases, possibly due to setting the threshold too strictly or because Rakotomalala deliberately designed the added noise variables to not significantly affect the results but not deviate too much. As seen in Fig. 7, after a-type variables start to be added, the model performance does not significantly improve after about the 10th variable, and after the 13th variable 'v8', performance remains almost flat. This indicates that a-type variables do not contribute much to the model (neither helping nor harming). Comparing this to our initial hypotheses:
+1.	“V-type variables are more important.”
+2.	“A-type variables do not help the model and may even harm it.”
+
+Both are generally correct but have exceptions. Whether a-type variables harm the model will be discussed later in the classification learning stage.
 
 ```python
 # Lasso Selection
@@ -426,7 +427,19 @@ feature_names: ['v4' 'v5' 'v8' 'v9' 'v10' 'v11' 'v12' 'v13' 'v15' 'v16' 'v17' 'v
 
 # Logistic Regression
 
-在分類的部分我嘗試了五組的 Feature Group，分別是 without feature selection / lasso feature selection / stepwise feature selection / all ‘v’ / all ‘a’。因為是均衡的資料集，故可以以 Accuracy 來做模型比較，可以看到在有做變數選擇的組別中，運用 Lasso 做 Feature selection 的成效是最好的，再來是全選，最後才是 Stepwise selection，但並沒有差到太多。另外可以比較 w/o Feature selection 和 Lasso 這兩組可以看到在 Accuracy 在 w/o Feature selection 的情況下有下降，但其實下降的量有限，由前面的結果可以大致認定這兩組 Feature group 之間的差幾乎都是 a 類變數，所以回歸到開頭的假設 2.「a 類變數對於模型沒有幫助或甚至會傷害模型」這點，可以說 a 類變數的存在會增加模型的 noise，會對模型造成一定的影響，但其實效果有限，因此可以認定 a 類變數即為純粹的雜訊，並不會對模型起到非常大的傷害，但仍需要被刪除以降低模型的複雜度。另外也可以看到，`’v17’` 在三組裡面的變數重要性都是排第一。最後在比較全部的 v 類變數和全部的 a 類變數會發現 all ‘v’ 的表現又優於 Lasso，這實際上也是可以預期的，只要在不傷害模型 (常有有極端值) 的情況下，增加模型中的變數多少會使他擬合得更好，但 Feature selection 的目的就在於降低模型的複雜度，在減少變數的同時避免掉發生 Overfitting 的可能性。
+In the classification phase, I experimented with five feature groups:
+
+	1.	Without feature selection
+	2.	Lasso feature selection
+	3.	Stepwise feature selection
+	4.	All ‘v’ variables
+	5.	All ‘a’ variables
+
+Since the dataset is balanced, accuracy was used to compare the models. The results indicate that among the groups employing feature selection, using Lasso for feature selection achieved the best performance, followed by selecting all features, and then stepwise selection, although the differences were not substantial.
+
+Additionally, when comparing the models without feature selection and with Lasso feature selection, a slight decrease in accuracy is observed in the model without feature selection; however, the decrease is minimal. Based on previous results, it can be inferred that the difference between these two feature groups is almost entirely due to the A-type variables. Referring back to the initial hypothesis 2: “The A-type variables do not help the model and may even harm it,” it can be concluded that the presence of A-type variables increases noise in the model, causing some impact, but the effect is limited. Therefore, A-type variables can be considered pure noise, which does not significantly harm the model but should be removed to reduce the model’s complexity.
+
+Furthermore, we observed that `v17` consistently ranked first in feature importance across the three groups. Finally, when comparing models using all V-type variables and all A-type variables, we found that the performance of using all V- variables surpassed that of the Lasso-selected features. This is expected; as long as the model is not adversely affected (e.g., by extreme values), increasing the number of variables generally leads to better fitting. However, the purpose of feature selection is to reduce the model’s complexity and to avoid overfitting by reducing the number of variables.
 
 |  | w/o Feature selection | Lasso | Stepwise | all ‘v’ | all ‘a’ |
 | --- | --- | --- | --- | --- | --- |
@@ -550,73 +563,11 @@ Fig. 10-1 & Fig. 10-2
 
 ## Model Complexity
 
-在模型複雜度測試中，Lasso 的表現大致比 Stepwise 要好，這點是可預期的，吻合上面的結果。兩組均在 Log(C) = -2, -3 左右時分別有最低的 Error。但兩者均呈現出一個現象就是 $Train\ Error > Test\ Error$，在撇除 code 有問題的情況下 (附在下面)，可能就是剛好 testing data 比較好 fit，至於其他原因目前還沒想到，若有更新會隨後補上。
+In the model complexity tests, the performance of Lasso was generally better than that of Stepwise, which is expected and aligns with the previous results. Both methods achieved their lowest errors when Log(C) was around -2 or -3. However, an interesting phenomenon observed in both cases is that $Train\ Error > Test\ Error$. Assuming there are no issues with the code (attached below), this might simply be because the testing data fits better. I have yet to determine other possible reasons, and I will provide updates if I discover any new insights.
 
 <img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/fa00f11e-ad0e-47d3-ab02-3dc60095c547">
 <img width="450" src="https://github.com/scfengv/Mathematical-and-Statistical-foundation-of-Shrinkage-method/assets/123567363/48f038a2-73c0-4496-a65c-9341498aa28d">
 
-Fig. 11-1 & Fig. 11-2
-
-```python
-C_range = [ 10**i for i in range(-4, 5) ]
-
-train_errors = []
-test_errors = []
-
-for C in C_range:
-    clf = LogisticRegression(
-        max_iter = int(1e7), C = C, penalty = 'l2', solver = 'lbfgs', random_state = 42
-    )
-    clf.fit(x_train_scl, y_train)
-    train_errors.append(1 - clf.score(x_train_scl, y_train))
-    test_errors.append(1 - clf.score(x_test_scl, y_test))
-
-fig = go.Figure()
-
-fig.add_trace(
-    go.Scatter(
-        x = [ np.log10(C) for C in C_range ], y = train_errors,
-        mode = 'lines+markers',
-        name = 'Train Error'
-    )
-)
-
-fig.add_trace(
-    go.Scatter(
-        x = [ np.log10(C) for C in C_range ], y = test_errors,
-        mode = 'lines+markers',
-        name = 'Test Error'
-    )
-)
-fig.update_layout(
-    title = {
-        'text': 'Model Complexity',
-        'font': {
-            'size': 40, 'family': 'Gulliver'
-        },
-        'x': 0.5
-    },
-    width = 800, height = 600,
-    xaxis_title = {
-        'text': 'Log(C)',
-        'font': {
-            'size': 24, 'family': 'Gulliver'
-        }
-    },
-    yaxis_title = {
-        'text': 'Classification Error',
-        'font': {
-            'size': 24, 'family': 'Gulliver'
-        }
-    }
-)
-
-fig.update_yaxes(
-    range = [0.075, 0.095]
-)
-
-fig.show()
-```
 
 ### Reference:
 
