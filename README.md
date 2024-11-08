@@ -192,6 +192,7 @@ Ridge\ :\ {\arg \min_{\beta}} [{\|y-X\beta\|}_2\ ^2+\lambda\|\beta\|_2^2]
 $$
 
 For every value of $\lambda$, there is an $s$ that satisfies:
+
 $$
 Lasso:min \lbrace \sum_{i=1}^N (y_i-\beta_0-\sum_{j=1}^p\beta_jx_{ij})^2\ \rbrace \ subject\ to\ \sum_{j=1}^p |\beta_j|\leq s
 $$
